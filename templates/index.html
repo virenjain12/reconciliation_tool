@@ -1,0 +1,52 @@
+<!-- templates/index.html -->
+{% extends "layout.html" %}
+{% block title %}Home - Reconciliation Agent{% endblock %}
+{% block content %}
+<div class="card p-4">
+  <h2 class="text-center mb-4">📄 Invoice-PO Reconciliation Tool</h2>
+  <form id="upload-form" enctype="multipart/form-data" method="post">
+    <div class="mb-3">
+      <label for="po-files" class="form-label">Upload Purchase Orders (PDF)</label>
+      <input type="file" class="form-control" id="po-files" multiple accept=".pdf" />
+    </div>
+    <div class="mb-3">
+      <label for="invoice-files" class="form-label">Upload Invoices (PDF)</label>
+      <input type="file" class="form-control" id="invoice-files" multiple accept=".pdf" />
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Upload & Run</button>
+  </form>
+  <p id="status" class="text-center text-muted"></p>
+</div>
+
+<script>
+  document.getElementById("upload-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const status = document.getElementById("status");
+    status.textContent = "⏳ Uploading and processing...";
+    const formData = new FormData();
+    for (const file of document.getElementById("po-files").files) {
+      formData.append("po_files", file);
+    }
+    for (const file of document.getElementById("invoice-files").files) {
+      formData.append("invoice_files", file);
+    }
+
+    try {
+      const res = await fetch("/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Server error");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "reconciliation_report.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      status.textContent = "✅ Reconciliation complete. Report downloaded.";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "❌ An error occurred during processing.";
+    }
+  });
+</script>
+{% endblock %}
